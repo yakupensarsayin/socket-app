@@ -2,18 +2,6 @@
 
 #include <iostream>
 
-#ifdef WIN32
-#include <winsock2.h>
-#include <ws2tcpip.h>
-#pragma comment(lib, "Ws2_32.lib")
-#elif __linux__
-#include <sys/types.h>
-#include <sys/socket.h>
-#include <netdb.h>
-#endif
-
-#define PORT "1922"
-
 /**
  * In order to use WSA on Windows
  * we need to initialize the Windows Sockets DLL
@@ -42,18 +30,57 @@ addrinfo * TcpSocketServer::GetAddrInfoResult() {
     struct addrinfo *result = nullptr;
     if (getaddrinfo(nullptr, PORT, &hints, &result) != 0) {
         std::cout << "getaddrinfo failed.\n";
-#ifdef WIN32
-        WSACleanup();
-#endif
+        Cleanup();
         exit(EXIT_FAILURE);
     }
 
     return result;
 }
 
-TcpSocketServer::TcpSocketServer() {
-    InitializeSocket();
+SocketType TcpSocketServer::CreateServerSocket(addrinfo* result) {
+    std::cout << "Creating server socket.\n";
+
+    const SocketType serverSocket = socket(result->ai_family, result->ai_socktype, result->ai_protocol);
+
+    // INVALID_SOCKET in Windows equals to ~0 hence -1
+    if (serverSocket == -1) {
+        std::cout << "Failed to create a socket.\n";
+        freeaddrinfo(result);
+        Cleanup();
+        exit(EXIT_FAILURE);
+    }
+
+    std::cout << "Server socket created.\n";
+
+    return serverSocket;
 }
 
+void TcpSocketServer::SetSocketOptions(addrinfo* result) const {
 
+    std::cout << "Setting server socket options.\n";
 
+    constexpr int iOptVal = 1;
+
+    if (setsockopt(mServerSocket, SOL_SOCKET, SO_REUSEADDR,
+        reinterpret_cast<OptValType>(&iOptVal), sizeof(int)) == -1) {
+        std::cout << "Failed to set socket options " << WSAGetLastError() << "\n";
+        freeaddrinfo(result);
+        Cleanup();
+        exit(EXIT_FAILURE);
+    }
+
+    std::cout << "Server socket options successfully set.\n";
+}
+
+void TcpSocketServer::Cleanup() {
+#ifdef WIN32
+    WSACleanup();
+#endif
+}
+
+TcpSocketServer::TcpSocketServer() {
+    InitializeSocket();
+    addrinfo *result = GetAddrInfoResult();
+    mServerSocket = CreateServerSocket(result);
+    SetSocketOptions(result);
+}
