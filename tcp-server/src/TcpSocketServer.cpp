@@ -1,6 +1,7 @@
 #include "../include/TcpSocketServer.h"
 
 #include <iostream>
+#include <cstring>
 
 /**
  * In order to use WSA on Windows
@@ -131,6 +132,12 @@ void TcpSocketServer::ReceiveDataFromClient() const {
         if (iResult > 0) {
             std::cout << "Bytes received: " << iResult << "\n";
             std::cout << recvbuf << "\n";
+
+            if (iResult < recvlen) {
+                // Clear the junk data.
+                memset(recvbuf, 0, recvlen);
+            }
+
         } else if (iResult == 0) {
             std::cout << "Connection closing!\n";
         } else {

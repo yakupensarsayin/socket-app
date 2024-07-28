@@ -62,23 +62,34 @@ void TcpClientSocket::AttemptToConnect() {
         break;
     }
 
+    freeaddrinfo(mResult);
+
     if (mSocket == -1) {
         std::cout << "Unable to connect to the Server.\n";
         Cleanup();
         exit(EXIT_FAILURE);
     }
-
-    freeaddrinfo(mResult);
 }
 
 void TcpClientSocket::SendData() const {
-    if (const auto sendbuf = "Can you get my data?";
-        send(mSocket, sendbuf, static_cast<int>(strlen(sendbuf)), 0) == -1) {
-            std::cout << "Send failed.\n";
-            CloseSocket();
-            Cleanup();
-            exit(EXIT_FAILURE);
-    }
+
+    std::string input;
+
+    do {
+        std::cout << "Message:";
+        std::getline(std::cin, input);
+
+        if (const char* sendbuf = input.c_str();
+            send(mSocket, sendbuf, static_cast<int>(strlen(sendbuf)), 0) == -1) {
+                std::cout << "Send failed.\n";
+                CloseSocket();
+                Cleanup();
+                exit(EXIT_FAILURE);
+        }
+
+    } while (input != "exit");
+
+
 }
 
 void TcpClientSocket::SocketShutdown() const {
