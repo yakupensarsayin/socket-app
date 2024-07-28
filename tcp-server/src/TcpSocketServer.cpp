@@ -133,10 +133,7 @@ void TcpSocketServer::ReceiveDataFromClient() const {
             std::cout << "Bytes received: " << iResult << "\n";
             std::cout << recvbuf << "\n";
 
-            if (iResult < recvlen) {
-                // Clear the junk data.
-                memset(recvbuf, 0, recvlen);
-            }
+            memset(recvbuf, 0, recvlen);
 
         } else if (iResult == 0) {
             std::cout << "Connection closing!\n";
