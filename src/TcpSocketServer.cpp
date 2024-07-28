@@ -63,7 +63,7 @@ void TcpSocketServer::SetSocketOptions(addrinfo* result) const {
 
     if (setsockopt(mServerSocket, SOL_SOCKET, SO_REUSEADDR,
         reinterpret_cast<OptValType>(&iOptVal), sizeof(int)) == -1) {
-        std::cout << "Failed to set socket options " << WSAGetLastError() << "\n";
+        std::cout << "Failed to set socket options\n";
         freeaddrinfo(result);
         Cleanup();
         exit(EXIT_FAILURE);

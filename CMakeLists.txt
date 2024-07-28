@@ -7,4 +7,6 @@ add_executable(socket_app main.cpp
         src/TcpSocketServer.cpp
         include/TcpSocketServer.h)
 
-target_link_libraries(socket_app Ws2_32.lib)
+IF (WIN32)
+    target_link_libraries(socket_app Ws2_32.lib)
+ENDIF ()
