@@ -84,7 +84,7 @@ void TcpSocketServer::BindSocket() const {
 
 void TcpSocketServer::ListenSocket() const {
 
-    if (listen(mServerSocket, SOMAXCONN) == -1) {
+    if (listen(mServerSocket, 5) == -1) {
         std::cout << "Listen failed.\n";
         CloseSocket();
         Cleanup();
@@ -102,12 +102,12 @@ void TcpSocketServer::CloseSocket() const {
 #endif
 }
 
-void TcpSocketServer::AcceptSingleConnection() const {
+void TcpSocketServer::AcceptSingleConnection(){
     sockaddr clientAddr{};
-    SocketType clientSocket{};
     AddrLenType clientAddrLen = sizeof(clientAddr);
 
-    if ((clientSocket = accept(mServerSocket, &clientAddr, &clientAddrLen)) < 0) {
+    const SocketType clientSocket = accept(mServerSocket, &clientAddr, &clientAddrLen);
+    if (clientSocket == -1) {
         std::cout << "Accept failed.\n";
         CloseSocket();
         Cleanup();
@@ -115,6 +115,32 @@ void TcpSocketServer::AcceptSingleConnection() const {
     }
 
     std::cout << "Client accepted!\n";
+
+    mClientSocket = clientSocket;
+}
+
+void TcpSocketServer::ReceiveDataFromClient() const {
+    int iResult;
+
+    do {
+        constexpr int recvlen = BUFLEN;
+        char recvbuf[BUFLEN];
+
+        iResult = recv(mClientSocket, recvbuf, recvlen, 0);
+
+        if (iResult > 0) {
+            std::cout << "Bytes received: " << iResult << "\n";
+            std::cout << recvbuf << "\n";
+        } else if (iResult == 0) {
+            std::cout << "Connection closing!\n";
+        } else {
+            std::cout << "Recv() failed.\n";
+            CloseSocket();
+            Cleanup();
+            exit(EXIT_SUCCESS);
+        }
+
+    } while (iResult > 0);
 }
 
 void TcpSocketServer::Cleanup() {
@@ -131,4 +157,5 @@ TcpSocketServer::TcpSocketServer() {
     BindSocket();
     ListenSocket();
     AcceptSingleConnection();
+    ReceiveDataFromClient();
 }

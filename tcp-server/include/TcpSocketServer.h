@@ -19,6 +19,7 @@ typedef socklen_t AddrLenType;
 #endif
 
 #define PORT "1922"
+#define BUFLEN 512
 
 class TcpSocketServer {
 
@@ -27,6 +28,7 @@ public:
 
 private:
     SocketType mServerSocket{};
+    SocketType mClientSocket{};
     addrinfo *mResult{};
 
     static void InitializeSocket();
@@ -36,7 +38,8 @@ private:
     void BindSocket() const;
     void ListenSocket() const;
     void CloseSocket() const;
-    void AcceptSingleConnection() const;
+    void AcceptSingleConnection();
+    void ReceiveDataFromClient() const;
     static void Cleanup();
 };
 
