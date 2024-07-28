@@ -7,12 +7,15 @@
 #pragma comment(lib, "Ws2_32.lib")
 typedef SOCKET SocketType;
 typedef const char* OptValType;
+typedef int AddrLenType;
 #elif __linux__
 #include <sys/types.h>
 #include <sys/socket.h>
+#include <unistd.h>
 #include <netdb.h>
 typedef int SocketType;
 typedef const void* OptValType;
+typedef socklen_t AddrLenType;
 #endif
 
 #define PORT "1922"
@@ -23,12 +26,16 @@ public:
     TcpSocketServer();
 
 private:
-    SocketType mServerSocket;
+    SocketType mServerSocket{};
+    addrinfo *mResult{};
 
     static void InitializeSocket();
-    static addrinfo *GetAddrInfoResult();
-    static SocketType CreateServerSocket(struct addrinfo* result);
-    void SetSocketOptions(addrinfo *result) const;
+    void GetAddrInfoResult();
+    void CreateServerSocket();
+    void SetSocketOptions() const;
+    void BindSocket() const;
+    void ListenSocket() const;
+    void CloseSocket() const;
     static void Cleanup();
 };
 

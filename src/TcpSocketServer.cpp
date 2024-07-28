@@ -8,19 +8,17 @@
  */
 void TcpSocketServer::InitializeSocket() {
 #ifdef WIN32
-    std::cout << "Initializing Windows Sockets DLL\n";
-
     WSADATA wsaData;
     if (WSAStartup(MAKEWORD(2,2), &wsaData) != 0) {
         std::cout << "Could not initialize Windows Sockets DLL\n";
         exit(EXIT_FAILURE);
     }
 
-    std::cout << "Initialize successful.\n";
+    std::cout << "Windows DLL initialization is successful.\n";
 #endif
 }
 
-addrinfo * TcpSocketServer::GetAddrInfoResult() {
+void TcpSocketServer::GetAddrInfoResult() {
     struct addrinfo hints{};
     hints.ai_family = AF_INET;
     hints.ai_socktype = SOCK_STREAM;
@@ -34,42 +32,74 @@ addrinfo * TcpSocketServer::GetAddrInfoResult() {
         exit(EXIT_FAILURE);
     }
 
-    return result;
+    mResult = result;
 }
 
-SocketType TcpSocketServer::CreateServerSocket(addrinfo* result) {
-    std::cout << "Creating server socket.\n";
+void TcpSocketServer::CreateServerSocket() {
 
-    const SocketType serverSocket = socket(result->ai_family, result->ai_socktype, result->ai_protocol);
+    const SocketType serverSocket = socket(mResult->ai_family, mResult->ai_socktype, mResult->ai_protocol);
 
     // INVALID_SOCKET in Windows equals to ~0 hence -1
     if (serverSocket == -1) {
         std::cout << "Failed to create a socket.\n";
-        freeaddrinfo(result);
+        freeaddrinfo(mResult);
         Cleanup();
         exit(EXIT_FAILURE);
     }
 
     std::cout << "Server socket created.\n";
 
-    return serverSocket;
+    mServerSocket = serverSocket;
 }
 
-void TcpSocketServer::SetSocketOptions(addrinfo* result) const {
-
-    std::cout << "Setting server socket options.\n";
+void TcpSocketServer::SetSocketOptions() const {
 
     constexpr int iOptVal = 1;
 
     if (setsockopt(mServerSocket, SOL_SOCKET, SO_REUSEADDR,
         reinterpret_cast<OptValType>(&iOptVal), sizeof(int)) == -1) {
-        std::cout << "Failed to set socket options\n";
-        freeaddrinfo(result);
+        std::cout << "Failed to set socket options.\n";
+        freeaddrinfo(mResult);
         Cleanup();
         exit(EXIT_FAILURE);
     }
 
     std::cout << "Server socket options successfully set.\n";
+}
+
+void TcpSocketServer::BindSocket() const {
+
+    if (bind(mServerSocket, mResult->ai_addr, static_cast<AddrLenType>(mResult->ai_addrlen)) != 0) {
+        std::cout << "Binding failed.\n";
+        freeaddrinfo(mResult);
+        CloseSocket();
+        Cleanup();
+        exit(EXIT_FAILURE);
+    }
+
+    freeaddrinfo(mResult);
+
+    std::cout << "Server socket succesfully bound.\n";
+}
+
+void TcpSocketServer::ListenSocket() const {
+
+    if (listen(mServerSocket, SOMAXCONN) == -1) {
+        std::cout << "Listen failed.\n";
+        CloseSocket();
+        Cleanup();
+        exit(EXIT_FAILURE);
+    }
+
+    std::cout << "Server socket is listening for new connections...\n";
+}
+
+void TcpSocketServer::CloseSocket() const {
+#ifdef WIN32
+    closesocket(mServerSocket);
+#elif __linux__
+    close(mServerSocket);
+#endif
 }
 
 void TcpSocketServer::Cleanup() {
@@ -80,7 +110,9 @@ void TcpSocketServer::Cleanup() {
 
 TcpSocketServer::TcpSocketServer() {
     InitializeSocket();
-    addrinfo *result = GetAddrInfoResult();
-    mServerSocket = CreateServerSocket(result);
-    SetSocketOptions(result);
+    GetAddrInfoResult();
+    CreateServerSocket();
+    SetSocketOptions();
+    BindSocket();
+    ListenSocket();
 }
