@@ -36,6 +36,7 @@ private:
     void BindSocket() const;
     void ListenSocket() const;
     void CloseSocket() const;
+    void AcceptSingleConnection() const;
     static void Cleanup();
 };
 

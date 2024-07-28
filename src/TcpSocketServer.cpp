@@ -102,6 +102,21 @@ void TcpSocketServer::CloseSocket() const {
 #endif
 }
 
+void TcpSocketServer::AcceptSingleConnection() const {
+    sockaddr clientAddr{};
+    SocketType clientSocket{};
+    AddrLenType clientAddrLen = sizeof(clientAddr);
+
+    if ((clientSocket = accept(mServerSocket, &clientAddr, &clientAddrLen)) < 0) {
+        std::cout << "Accept failed.\n";
+        CloseSocket();
+        Cleanup();
+        exit(EXIT_FAILURE);
+    }
+
+    std::cout << "Client accepted!\n";
+}
+
 void TcpSocketServer::Cleanup() {
 #ifdef WIN32
     WSACleanup();
@@ -115,4 +130,5 @@ TcpSocketServer::TcpSocketServer() {
     SetSocketOptions();
     BindSocket();
     ListenSocket();
+    AcceptSingleConnection();
 }
